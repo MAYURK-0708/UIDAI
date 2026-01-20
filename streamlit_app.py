@@ -635,7 +635,8 @@ if merged_df is not None and enrol_df is not None:
         st.markdown('<div class="sub-header">📈 Predictive Analytics & Forecasting</div>', unsafe_allow_html=True)
         
         try:
-            forecast_path = project_root / 'outputs' / 'models' / 'arima_forecast.csv'
+            # Use relative path for Streamlit Cloud compatibility
+            forecast_path = Path('outputs/models/arima_forecast.csv')
             
             if forecast_path.exists():
                 arima_forecast = pd.read_csv(forecast_path, parse_dates=['date'])
