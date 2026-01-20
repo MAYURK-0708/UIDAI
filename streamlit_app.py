@@ -15,12 +15,17 @@ from pathlib import Path
 
 # Add src directory to path
 current_dir = Path(__file__).parent
-project_root = current_dir.parent
-src_dir = project_root / 'src'
+src_dir = current_dir / 'src'
 sys.path.insert(0, str(src_dir))
 
-from data_loader import AadhaarDataLoader
-from visualizations import AadhaarVisualizer
+try:
+    from data_loader import AadhaarDataLoader
+    from visualizations import AadhaarVisualizer
+except ImportError:
+    # If imports fail, we'll handle data loading inline
+    AadhaarDataLoader = None
+    AadhaarVisualizer = None
+
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -289,14 +294,28 @@ st.markdown('''
 def load_data():
     """Load processed data"""
     try:
-        # Use absolute paths based on project root
-        data_dir = project_root / 'data' / 'processed'
+        # Use relative paths for Streamlit Cloud
+        data_dir = Path('data/processed')
+        
+        # Check if data directory exists
+        if not data_dir.exists():
+            st.warning("⚠️ Data directory not found. Please upload processed data.")
+            return None, None
+            
         merged_df = pd.read_csv(data_dir / 'merged_with_features.csv', parse_dates=['date'])
         enrol_df = pd.read_csv(data_dir / 'enrolment_with_anomalies.csv', parse_dates=['date'])
         return merged_df, enrol_df
     except FileNotFoundError as e:
         st.error(f"⚠️ Processed data not found: {e}")
-        st.info(f"Looking for data in: {data_dir}")
+        st.info("📝 Please ensure data files are in data/processed/ directory")
+        st.markdown("""
+        **Required files:**
+        - `data/processed/merged_with_features.csv`
+        - `data/processed/enrolment_with_anomalies.csv`
+        """)
+        return None, None
+    except Exception as e:
+        st.error(f"❌ Error loading data: {e}")
         return None, None
 
 # Load data
