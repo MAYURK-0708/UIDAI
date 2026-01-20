@@ -299,19 +299,27 @@ def load_data():
         
         # Check if data directory exists
         if not data_dir.exists():
-            st.warning("⚠️ Data directory not found. Please upload processed data.")
+            st.warning("⚠️ Data directory not found. Using demo mode.")
             return None, None
-            
-        merged_df = pd.read_csv(data_dir / 'merged_with_features.csv', parse_dates=['date'])
-        enrol_df = pd.read_csv(data_dir / 'enrolment_with_anomalies.csv', parse_dates=['date'])
+        
+        # Try to load sample data first (for demo/cloud deployment)
+        try:
+            merged_df = pd.read_csv(data_dir / 'merged_sample.csv', parse_dates=['date'])
+            enrol_df = pd.read_csv(data_dir / 'enrolment_sample.csv', parse_dates=['date'])
+            st.info("📊 Demo mode: Showing sample of 1000 records")
+        except FileNotFoundError:
+            # Fall back to full data
+            merged_df = pd.read_csv(data_dir / 'merged_with_features.csv', parse_dates=['date'])
+            enrol_df = pd.read_csv(data_dir / 'enrolment_with_anomalies.csv', parse_dates=['date'])
+        
         return merged_df, enrol_df
     except FileNotFoundError as e:
         st.error(f"⚠️ Processed data not found: {e}")
         st.info("📝 Please ensure data files are in data/processed/ directory")
         st.markdown("""
         **Required files:**
-        - `data/processed/merged_with_features.csv`
-        - `data/processed/enrolment_with_anomalies.csv`
+        - `data/processed/merged_sample.csv` (or merged_with_features.csv)
+        - `data/processed/enrolment_sample.csv` (or enrolment_with_anomalies.csv)
         """)
         return None, None
     except Exception as e:
