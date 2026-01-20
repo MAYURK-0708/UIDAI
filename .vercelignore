@@ -1,0 +1,10 @@
+# Vercel-specific .gitignore additions
+api_data_*
+*.csv
+data/
+models/
+outputs/
+notebooks/
+__pycache__/
+*.pyc
+.env
