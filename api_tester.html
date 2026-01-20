@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aadhaar Observatory API - Interactive Tester</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 2rem;
+        }
+        
+        h1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 2rem;
+        }
+        
+        .endpoint-section {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-radius: 8px;
+        }
+        
+        .endpoint-section h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+        
+        .method {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            margin-right: 0.5rem;
+        }
+        
+        .method.get {
+            background: #28a745;
+            color: white;
+        }
+        
+        .method.post {
+            background: #007bff;
+            color: white;
+        }
+        
+        .endpoint-url {
+            font-family: 'Courier New', monospace;
+            background: #fff;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin: 0.5rem 0;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .response-box {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .response-box.show {
+            display: block;
+        }
+        
+        .input-group {
+            margin: 1rem 0;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .input-group input, .input-group select, .input-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        
+        .input-group textarea {
+            font-family: 'Courier New', monospace;
+            min-height: 100px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+        
+        .status-indicator.active {
+            background: #28a745;
+            box-shadow: 0 0 10px #28a745;
+        }
+        
+        .status-indicator.inactive {
+            background: #dc3545;
+        }
+        
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        
+        .quick-link {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 2px solid transparent;
+        }
+        
+        .quick-link:hover {
+            transform: translateY(-5px);
+            border-color: #667eea;
+        }
+        
+        .quick-link h4 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🇮🇳 Aadhaar Observatory API</h1>
+        <p class="subtitle">Interactive API Testing Interface</p>
+        
+        <div class="endpoint-section">
+            <h3><span class="status-indicator active"></span>API Status</h3>
+            <button onclick="checkHealth()">Check Health</button>
+            <div id="health-response" class="response-box"></div>
+        </div>
+        
+        <div class="quick-links">
+            <div class="quick-link" onclick="getSummary()">
+                <h4>📊 Summary</h4>
+                <p>Get overall statistics</p>
+            </div>
+            <div class="quick-link" onclick="getStates()">
+                <h4>🗺️ States</h4>
+                <p>List all states</p>
+            </div>
+            <div class="quick-link" onclick="getRiskAssessment()">
+                <h4>⚠️ Risk Assessment</h4>
+                <p>View risk analysis</p>
+            </div>
+            <div class="quick-link" onclick="showPredictionForm()">
+                <h4>🤖 ML Predictions</h4>
+                <p>Make predictions</p>
+            </div>
+        </div>
+        
+        <div class="endpoint-section">
+            <h3><span class="method get">GET</span> /api/summary</h3>
+            <button onclick="getSummary()">Get Summary</button>
+            <div id="summary-response" class="response-box"></div>
+        </div>
+        
+        <div class="endpoint-section">
+            <h3><span class="method post">POST</span> /api/regional-analysis</h3>
+            <div class="input-group">
+                <label>Region Type:</label>
+                <select id="region-type">
+                    <option value="state">State</option>
+                    <option value="district">District</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Region Name:</label>
+                <input type="text" id="region-name" placeholder="e.g., Maharashtra">
+            </div>
+            <button onclick="getRegionalAnalysis()">Analyze Region</button>
+            <div id="regional-response" class="response-box"></div>
+        </div>
+        
+        <div class="endpoint-section">
+            <h3><span class="method post">POST</span> /api/predictions</h3>
+            <div class="input-group">
+                <label>Prediction Type:</label>
+                <select id="pred-type">
+                    <option value="vulnerability">Vulnerability</option>
+                    <option value="demand">Demand</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Features (JSON):</label>
+                <textarea id="pred-features" placeholder='{
+  "total_enrolments": 5000,
+  "total_updates": 300,
+  "biometric_coverage": 0.85
+}'></textarea>
+            </div>
+            <button onclick="makePrediction()">Predict</button>
+            <div id="prediction-response" class="response-box"></div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = 'http://localhost:5000';
+        
+        function showResponse(elementId, data, status) {
+            const element = document.getElementById(elementId);
+            element.classList.add('show');
+            element.innerHTML = `<strong>Status: ${status}</strong>\n${JSON.stringify(data, null, 2)}`;
+        }
+        
+        async function checkHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/api/health`);
+                const data = await response.json();
+                showResponse('health-response', data, response.status);
+            } catch (error) {
+                showResponse('health-response', { error: error.message }, 'ERROR');
+            }
+        }
+        
+        async function getSummary() {
+            try {
+                const response = await fetch(`${API_BASE}/api/summary`);
+                const data = await response.json();
+                showResponse('summary-response', data, response.status);
+            } catch (error) {
+                showResponse('summary-response', { error: error.message }, 'ERROR');
+            }
+        }
+        
+        async function getStates() {
+            try {
+                const response = await fetch(`${API_BASE}/api/states`);
+                const data = await response.json();
+                alert(`Loaded ${data.length || 0} states. Check console for details.`);
+                console.log(data);
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        async function getRiskAssessment() {
+            try {
+                const response = await fetch(`${API_BASE}/api/risk-assessment`);
+                const data = await response.json();
+                alert('Risk assessment loaded. Check console for details.');
+                console.log(data);
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        async function getRegionalAnalysis() {
+            const type = document.getElementById('region-type').value;
+            const region = document.getElementById('region-name').value;
+            
+            if (!region) {
+                alert('Please enter a region name');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/regional-analysis`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type, region })
+                });
+                const data = await response.json();
+                showResponse('regional-response', data, response.status);
+            } catch (error) {
+                showResponse('regional-response', { error: error.message }, 'ERROR');
+            }
+        }
+        
+        async function makePrediction() {
+            const type = document.getElementById('pred-type').value;
+            const featuresText = document.getElementById('pred-features').value;
+            
+            try {
+                const features = JSON.parse(featuresText);
+                const response = await fetch(`${API_BASE}/api/predictions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type, features })
+                });
+                const data = await response.json();
+                showResponse('prediction-response', data, response.status);
+            } catch (error) {
+                showResponse('prediction-response', { error: error.message }, 'ERROR');
+            }
+        }
+        
+        function showPredictionForm() {
+            document.querySelector('#pred-features').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Auto-check health on load
+        window.addEventListener('load', checkHealth);
+    </script>
+</body>
+</html>

@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aadhaar Observatory - Advanced Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .navbar {
+            background: linear-gradient(90deg, #004E89, #0066BB);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        }
+
+        .navbar h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .navbar-status {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #10B981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .header {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .header h2 {
+            font-size: 2rem;
+            color: #004E89;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 5px solid #FF6B35;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .metric-card h3 {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .metric-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #004E89;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-card .change {
+            font-size: 0.85rem;
+            color: #10B981;
+        }
+
+        .metric-card.critical {
+            border-left-color: #EF4444;
+        }
+
+        .metric-card.critical .value {
+            color: #EF4444;
+        }
+
+        .metric-card.warning {
+            border-left-color: #F59E0B;
+        }
+
+        .metric-card.warning .value {
+            color: #F59E0B;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-container {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .chart-container h3 {
+            color: #004E89;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .chart-placeholder {
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f5f5f5;
+            border-radius: 5px;
+            color: #999;
+        }
+
+        .table-container {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            overflow-x: auto;
+        }
+
+        .table-container h3 {
+            color: #004E89;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f5f5f5;
+            border-bottom: 2px solid #ddd;
+        }
+
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: #004E89;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        tbody tr:hover {
+            background: #f9f9f9;
+        }
+
+        .controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            color: #004E89;
+        }
+
+        select, input[type="text"], button {
+            padding: 0.75rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        select:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #004E89;
+            box-shadow: 0 0 5px rgba(0, 78, 137, 0.3);
+        }
+
+        button {
+            background: #004E89;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        button:hover {
+            background: #003366;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .risk-badge {
+            display: inline-block;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .risk-critical {
+            background: #FEE2E2;
+            color: #DC2626;
+        }
+
+        .risk-high {
+            background: #FEF3C7;
+            color: #D97706;
+        }
+
+        .risk-moderate {
+            background: #FEF08A;
+            color: #CA8A04;
+        }
+
+        .risk-low {
+            background: #DBEAFE;
+            color: #0284C7;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: white;
+            margin-top: 3rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: white;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .filter-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+        }
+
+        .alert-error {
+            background: #FEE2E2;
+            color: #DC2626;
+            border-left: 4px solid #DC2626;
+        }
+
+        .alert-success {
+            background: #DCFCE7;
+            color: #16A34A;
+            border-left: 4px solid #16A34A;
+        }
+
+        .info-box {
+            background: #EFF6FF;
+            border-left: 4px solid #0284C7;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            color: #0369A1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <div class="navbar">
+        <div>
+            <h1>🇮🇳 Aadhaar Observatory</h1>
+            <p style="font-size: 0.9rem; margin-top: 0.3rem; opacity: 0.9;">Advanced Analytics Dashboard</p>
+        </div>
+        <div class="navbar-status">
+            <span>Status:</span>
+            <div class="status-indicator"></div>
+            <span id="statusText">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h2>Stress, Vulnerability & Inclusion Observatory</h2>
+            <p>Real-time monitoring and predictive analytics of India's Aadhaar ecosystem</p>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="metrics-grid" id="metricsGrid">
+            <div class="loading"><div class="spinner"></div>Loading metrics...</div>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="controls">
+            <div class="control-group">
+                <label>State:</label>
+                <select id="stateFilter">
+                    <option value="">All States</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Analysis Type:</label>
+                <select id="analysisType">
+                    <option value="overview">Overview</option>
+                    <option value="regional">Regional Analysis</option>
+                    <option value="clustering">Clustering</option>
+                    <option value="risk">Risk Assessment</option>
+                </select>
+            </div>
+            <button onclick="updateDashboard()">Update Dashboard</button>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-grid">
+            <div class="chart-container">
+                <h3>Enrollment Trends</h3>
+                <div id="enrollmentChart" class="chart-placeholder">Chart loading...</div>
+            </div>
+            <div class="chart-container">
+                <h3>Biometric Coverage by State</h3>
+                <div id="bioChart" class="chart-placeholder">Chart loading...</div>
+            </div>
+        </div>
+
+        <!-- Data Tables -->
+        <div class="table-container">
+            <h3>Top States by Enrollment</h3>
+            <table id="statesTable">
+                <thead>
+                    <tr>
+                        <th>State</th>
+                        <th>Districts</th>
+                        <th>Total Enrollments</th>
+                        <th>Total Updates</th>
+                        <th>Biometric Coverage (%)</th>
+                        <th>Risk Level</th>
+                    </tr>
+                </thead>
+                <tbody id="statesTableBody">
+                    <tr><td colspan="6" style="text-align: center;">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Risk Assessment Table -->
+        <div class="table-container">
+            <h3>Risk Assessment by Region</h3>
+            <table id="riskTable">
+                <thead>
+                    <tr>
+                        <th>Region</th>
+                        <th>Risk Score</th>
+                        <th>Risk Category</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="riskTableBody">
+                    <tr><td colspan="4" style="text-align: center;">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>India's Aadhaar Stress, Vulnerability & Inclusion Observatory | UIDAI Data Hackathon 2026</p>
+        <p style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.8;">Last Updated: <span id="lastUpdate">-</span></p>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+
+        // Initialize dashboard
+        async function initDashboard() {
+            try {
+                await loadSummary();
+                await loadStates();
+                await loadRiskAssessment();
+                updateStatusIndicator('healthy');
+                document.getElementById('lastUpdate').textContent = new Date().toLocaleString();
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+                updateStatusIndicator('unhealthy');
+            }
+        }
+
+        // Load summary metrics
+        async function loadSummary() {
+            try {
+                const response = await axios.get(`${API_BASE}/summary`);
+                const data = response.data;
+
+                const metricsHTML = `
+                    <div class="metric-card">
+                        <h3>Total Records</h3>
+                        <div class="value">${(data.total_records || 0).toLocaleString()}</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Total States</h3>
+                        <div class="value">${data.states || 0}</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Total Districts</h3>
+                        <div class="value">${data.districts || 0}</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Total Enrollments</h3>
+                        <div class="value">${(data.enrollment_total || 0).toLocaleString()}</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Biometric Coverage</h3>
+                        <div class="value">${(data.biometric_coverage_avg || 0).toFixed(1)}%</div>
+                    </div>
+                `;
+
+                document.getElementById('metricsGrid').innerHTML = metricsHTML;
+                updateCharts(data);
+            } catch (error) {
+                console.error('Error loading summary:', error);
+                document.getElementById('metricsGrid').innerHTML = '<div class="alert alert-error">Failed to load metrics</div>';
+            }
+        }
+
+        // Load states list
+        async function loadStates() {
+            try {
+                const response = await axios.get(`${API_BASE}/states`);
+                const states = response.data;
+
+                // Populate state dropdown
+                const stateSelect = document.getElementById('stateFilter');
+                states.forEach(state => {
+                    const option = document.createElement('option');
+                    option.value = state.state;
+                    option.textContent = state.state;
+                    stateSelect.appendChild(option);
+                });
+
+                // Populate states table
+                const tbody = document.getElementById('statesTableBody');
+                tbody.innerHTML = states.slice(0, 10).map(state => `
+                    <tr>
+                        <td>${state.state}</td>
+                        <td>${state.districts}</td>
+                        <td>${state.enrollments.toLocaleString()}</td>
+                        <td>${state.updates.toLocaleString()}</td>
+                        <td>${state.avg_biometric_coverage.toFixed(1)}%</td>
+                        <td>
+                            <span class="risk-badge ${getRiskClass(state.avg_biometric_coverage)}">
+                                ${getRiskLabel(state.avg_biometric_coverage)}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading states:', error);
+            }
+        }
+
+        // Load risk assessment
+        async function loadRiskAssessment() {
+            try {
+                const response = await axios.get(`${API_BASE}/risk-assessment`);
+                const data = response.data;
+
+                const tbody = document.getElementById('riskTableBody');
+                const risks = Object.entries(data.by_state || {});
+                tbody.innerHTML = risks.slice(0, 10).map(([state, risk]) => `
+                    <tr>
+                        <td>${state}</td>
+                        <td>${(risk.risk_score || 0).toFixed(1)}</td>
+                        <td>
+                            <span class="risk-badge ${getRiskClassByScore(risk.risk_score)}">
+                                ${risk.risk_category || 'Unknown'}
+                            </span>
+                        </td>
+                        <td>
+                            <span style="font-size: 0.9rem; color: #666;">
+                                ${risk.risk_category === 'Critical' ? '⚠️ Attention needed' : '✓ Monitored'}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading risk assessment:', error);
+            }
+        }
+
+        // Update charts
+        function updateCharts(data) {
+            // Enrollment trend (dummy data for now)
+            const enrollmentTrace = {
+                x: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                y: [1000000, 1200000, 1400000, 1600000, 1800000, 2000000],
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#004E89', width: 3 },
+                marker: { size: 8 }
+            };
+
+            Plotly.newPlot('enrollmentChart', [enrollmentTrace], {
+                title: '',
+                xaxis: { title: 'Month' },
+                yaxis: { title: 'Enrollments' },
+                responsive: true,
+                margin: { t: 0 }
+            });
+
+            // Biometric coverage (dummy data)
+            const bioTrace = {
+                x: ['North', 'South', 'East', 'West', 'Central'],
+                y: [75, 82, 68, 79, 71],
+                type: 'bar',
+                marker: { color: '#FF6B35' }
+            };
+
+            Plotly.newPlot('bioChart', [bioTrace], {
+                title: '',
+                xaxis: { title: 'Region' },
+                yaxis: { title: 'Coverage %' },
+                responsive: true,
+                margin: { t: 0 }
+            });
+        }
+
+        // Helper functions
+        function getRiskLabel(coverage) {
+            if (coverage >= 80) return 'Low Risk';
+            if (coverage >= 60) return 'Moderate';
+            if (coverage >= 40) return 'High Risk';
+            return 'Critical';
+        }
+
+        function getRiskClass(coverage) {
+            if (coverage >= 80) return 'risk-low';
+            if (coverage >= 60) return 'risk-moderate';
+            if (coverage >= 40) return 'risk-high';
+            return 'risk-critical';
+        }
+
+        function getRiskClassByScore(score) {
+            if (score >= 70) return 'risk-critical';
+            if (score >= 50) return 'risk-high';
+            if (score >= 30) return 'risk-moderate';
+            return 'risk-low';
+        }
+
+        function updateStatusIndicator(status) {
+            const indicator = document.querySelector('.status-indicator');
+            const text = document.getElementById('statusText');
+            
+            if (status === 'healthy') {
+                indicator.style.background = '#10B981';
+                text.textContent = 'Connected';
+            } else if (status === 'degraded') {
+                indicator.style.background = '#F59E0B';
+                text.textContent = 'Degraded';
+            } else {
+                indicator.style.background = '#EF4444';
+                text.textContent = 'Disconnected';
+            }
+        }
+
+        async function updateDashboard() {
+            await initDashboard();
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>
